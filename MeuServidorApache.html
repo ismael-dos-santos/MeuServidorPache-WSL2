@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial: Configuração Apache no WSL2</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --bg: #f4f7f6;
+            --code-bg: #272822;
+            --text: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: var(--primary);
+            border-bottom: 3px solid var(--accent);
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: var(--accent);
+            margin-top: 30px;
+            display: flex;
+            align-items: center;
+        }
+
+        h2::before {
+            content: "🚀";
+            margin-right: 10px;
+        }
+
+        code {
+            background: var(--code-bg);
+            color: #f8f8f2;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+        }
+
+        pre {
+            background: var(--code-bg);
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border-left: 5px solid var(--accent);
+        }
+
+        .note {
+            background: #e7f3fe;
+            border-left: 5px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .command-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .command-list li {
+            margin-bottom: 15px;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .command-list li::before {
+            content: "➜";
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Guia de Configuração: Servidor Apache no WSL2</h1>
+        <p>Este tutorial foca na criação de um ambiente de desenvolvimento local para o <strong>"SeuProjeto"</strong>
+            com suporte a <strong>URLs Amigáveis (.htaccess)</strong> e paridade total com servidores de produção Linux.
+        </p>
+
+        <div class="note">
+            <strong>Pré-requisito:</strong> Ter o Ubuntu instalado via WSL2 e o Windows Terminal configurado.
+        </div>
+
+        <h2>1. Instalação e Preparação</h2>
+        <p>Abra o terminal do Ubuntu e execute os comandos para instalar o servidor e ativar o motor de reescrita:</p>
+        <pre>sudo apt update
+sudo apt install apache2 -y
+sudo a2enmod rewrite</pre>
+
+        <h2>2. Configurando Permissões de Pasta</h2>
+        <p>Para que o Apache consiga ler os arquivos dentro da sua pasta de usuário no WSL, precisamos dar permissão de
+            execução na árvore de diretórios:</p>
+        <ul class="command-list">
+            <li><code>sudo chmod 755 /home/NomedoUsuário</code></li>
+            <li><code>sudo chmod 755 /home/NomedoUsuário/caminho</code></li>
+            <li><code>sudo chmod -R 755 /home/NomedoUsuário/caminho/SeuProjeto</code></li>
+            <li><code>sudo chown -R NomedoUsuário:www-data /home/NomedoUsuário/caminho/SeuProjeto</code></li>
+        </ul>
+
+        <h2>3. Configuração do VirtualHost (O pulo do gato)</h2>
+        <p>Agora, vamos apontar a raiz do servidor diretamente para a pasta do projeto e permitir o uso do
+            <code>.htaccess</code>.
+        </p>
+        <p>Edite o arquivo: <code>sudo nano /etc/apache2/sites-available/000-default.conf</code></p>
+        <p>Mudar o DocumentRoot: Troque <code>/var/www/html</code> por
+            <code>/home/NomedoUsuário/caminho/SeuProjeto</code></p>
+        <p>Adicionar as permissões no mesmo arquivo: Logo abaixo da linha do <code>DocumentRoot</code> cole este bloco:
+        </p>
+        <pre>
+&lt;Directory /home/NomedoUsuário/caminho/SeuProjeto&gt;
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Require all granted
+&lt;/Directory&gt;</pre>
+        <p>Salve com <code>Ctrl+O</code>, <code>Enter</code> e saia com <code>Ctrl+X</code>.</p>
+
+        <h2>4. Ajuste Global de Segurança</h2>
+        <p>Garanta que o Apache tenha permissão global de sobrescrita. Edite o arquivo principal:</p>
+        <p><code>sudo nano /etc/apache2/apache2.conf</code></p>
+        <p>Procure pelo bloco <code>&lt;Directory /var/www/&gt;</code> e mude para:</p>
+        <pre>AllowOverride All</pre>
+
+        <h2>5. Finalização e Acesso</h2>
+        <p>Reinicie o serviço para aplicar todas as mudanças:</p>
+        <pre>sudo service apache2 restart</pre>
+        <p>Para descobrir o IP de acesso no Windows, use:</p>
+        <pre>hostname -I</pre>
+        <p>Acesse no Navegador: <code>http://[SEU-IP]/</code>. O site carregará usando a raiz <code>/</code>,
+            preservando
+            todos os seus caminhos de CSS e JS.</p>
+
+        <div class="note" style="background: #fff3cd; border-color: #ffc107;">
+            <strong>Dica:</strong> No WSL2 moderno, o Apache costuma iniciar sozinho. Caso não inicie, use
+            <code>sudo service apache2 start</code>.
+        </div>
+    </div>
+
+</body>
+
+</html>

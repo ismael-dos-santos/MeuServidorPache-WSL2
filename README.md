@@ -1,1 +1,2 @@
 # MeuServidorPache-WSL2
+Este tutorial foca na criação de um ambiente de desenvolvimento local para o "SeuProjeto" com suporte a URLs Amigáveis (.htaccess) e paridade total com servidores de produção Linux.
